@@ -315,3 +315,95 @@ pki:
         secretName: {{ include "mq.certs.qmgr.secretName" . | quote }}
         items:
 {{- toYaml .Values.pki.items | nindent 10 }}
+
+
+
+
+
+
+
+{{- if and .Values.certs.enabled .Values.certs.qmgr.create }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "mq.certs.qmgr.name" . | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  secretName: {{ include "mq.certs.qmgr.secretName" . | quote }}
+
+  {{- with .Values.certs.qmgr.duration }}
+  duration: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.certs.qmgr.renewBefore }}
+  renewBefore: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.certs.qmgr.commonName }}
+  commonName: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.certs.qmgr.dnsNames }}
+  dnsNames:
+{{ toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.certs.qmgr.privateKey }}
+  privateKey:
+{{ toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.certs.qmgr.subject }}
+  subject:
+{{ toYaml . | nindent 4 }}
+  {{- end }}
+
+  issuerRef:
+{{ toYaml .Values.certs.qmgr.issuerRef | nindent 4 }}
+{{- end }}
+
+
+
+
+{{- if and .Values.certs.enabled .Values.certs.crr.create }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "mq.certs.crr.name" . | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  secretName: {{ include "mq.certs.crr.secretName" . | quote }}
+
+  {{- with .Values.certs.crr.duration }}
+  duration: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.certs.crr.renewBefore }}
+  renewBefore: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.certs.crr.commonName }}
+  commonName: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.certs.crr.dnsNames }}
+  dnsNames:
+{{ toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.certs.crr.privateKey }}
+  privateKey:
+{{ toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.certs.crr.subject }}
+  subject:
+{{ toYaml . | nindent 4 }}
+  {{- end }}
+
+  issuerRef:
+{{ toYaml .Values.certs.crr.issuerRef | nindent 4 }}
+{{- end }}
+
+
