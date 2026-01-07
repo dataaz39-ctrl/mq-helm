@@ -50,7 +50,7 @@ certs:
       - "qmgr-ibm-mq-1"
       - "qmgr-ibm-mq-2"
 
-    renewBefore: "2400h"
+    renewBefore: "24h"
     duration: "17520h"
 
     privateKey:
@@ -86,8 +86,8 @@ certs:
       - "qmgr-ibm-mq-1"
       - "qmgr-ibm-mq-2"
 
-    renewBefore: "2400h"
-    duration: "17520h"
+    renewBefore: "24h"
+    duration: "170h"
 
     privateKey:
       rotationPolicy: Always
@@ -405,6 +405,7 @@ spec:
   issuerRef:
 {{ toYaml .Values.certs.crr.issuerRef | nindent 4 }}
 {{- end }}
+
 
 
 
