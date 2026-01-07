@@ -1,0 +1,317 @@
+Perfect — keep that certs: structure, and we’ll enforce your naming standard automatically from qm.name + env.
+
+Naming standard you asked for
+
+Given:
+
+qm.name: <qmgr>
+
+env: <env>
+
+We generate:
+
+QMGR certificate name: <qmgr>-<env>-certificate
+
+QMGR secret name: <qmgr>-<env>-tls
+
+CRR certificate name: <qmgr>-<env>-crr-certificate
+
+CRR secret name: <qmgr>-<env>-crr-tls
+
+You can still override name / secretName explicitly if you want, but by default it uses the standard above.
+
+
+
+
+1) Values structure (values.yaml) in your preferred format
+
+qm:
+  name: qmgr
+
+env: dev  # dev|test|prod
+
+certs:
+  enabled: true
+
+  qmgr:
+    create: true
+
+    # If you leave name/secretName empty or omit them:
+    # name      => <qm.name>-<env>-certificate
+    # secretName=> <qm.name>-<env>-tls
+    name: ""        # optional override
+    secretName: ""  # optional override
+
+    commonName: ""
+    dnsNames:
+      - "f-dev-adm2e-svrconn."
+      - "qmgr-dev-app2e-svrconn."
+      - "qmgr-ibm-mq-0"
+      - "qmgr-ibm-mq-1"
+      - "qmgr-ibm-mq-2"
+
+    renewBefore: "2400h"
+    duration: "17520h"
+
+    privateKey:
+      rotationPolicy: Always
+      algorithm: RSA
+      size: 2048
+
+    subject:
+      organizations: ["your-org"]
+      countries: ["US"]
+      organizationalUnits: [""]
+      provinces: [""]
+      localities: [""]
+
+    issuerRef:
+      name: "venafi-fpp-cluster-issuer"
+      kind: "ClusterIssuer"
+      group: "cert-manager.io"
+
+  crr:
+    create: true
+
+    # If blank/omitted:
+    # name      => <qm.name>-<env>-crr-certificate
+    # secretName=> <qm.name>-<env>-crr-tls
+    name: ""        # optional override
+    secretName: ""  # optional override
+
+    commonName: "qmgr-dev-crr."
+    dnsNames:
+      - "qmgr-dev-crr."
+      - "qmgr-ibm-mq-0"
+      - "qmgr-ibm-mq-1"
+      - "qmgr-ibm-mq-2"
+
+    renewBefore: "2400h"
+    duration: "17520h"
+
+    privateKey:
+      rotationPolicy: Always
+      algorithm: RSA
+      size: 2048
+
+    # crr can have its own subject too (optional)
+    subject:
+      organizations: ["your-org"]
+      countries: ["US"]
+      organizationalUnits: ["bacmqf"]
+      provinces: [""]
+      localities: [""]
+
+    issuerRef:
+      name: "venafi-fpp-cluster-issuer"
+      kind: "ClusterIssuer"
+      group: "cert-manager.io"
+
+
+
+2) helpers: build names from qm.name + env (and allow overrides)
+
+Put this into templates/_helpers.tpl:
+
+
+
+{{- define "mq.qmName" -}}
+{{- required "qm.name is required" .Values.qm.name | lower | trunc 40 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "mq.env" -}}
+{{- default "dev" .Values.env | lower -}}
+{{- end -}}
+
+{{- define "mq.certs.qmgr.name" -}}
+{{- $override := default "" .Values.certs.qmgr.name -}}
+{{- if $override -}}
+{{- $override | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s-certificate" (include "mq.qmName" .) (include "mq.env" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "mq.certs.qmgr.secretName" -}}
+{{- $override := default "" .Values.certs.qmgr.secretName -}}
+{{- if $override -}}
+{{- $override | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s-tls" (include "mq.qmName" .) (include "mq.env" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "mq.certs.crr.name" -}}
+{{- $override := default "" .Values.certs.crr.name -}}
+{{- if $override -}}
+{{- $override | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s-crr-certificate" (include "mq.qmName" .) (include "mq.env" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "mq.certs.crr.secretName" -}}
+{{- $override := default "" .Values.certs.crr.secretName -}}
+{{- if $override -}}
+{{- $override | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s-crr-tls" (include "mq.qmName" .) (include "mq.env" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
+
+
+3) Template: templates/certificates.yaml (creates QMGR + CRR Certificates)
+
+{{- if and .Values.certs.enabled .Values.certs.qmgr.create }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "mq.certs.qmgr.name" . | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  secretName: {{ include "mq.certs.qmgr.secretName" . | quote }}
+  {{- with .Values.certs.qmgr.renewBefore }}
+  renewBefore: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.certs.qmgr.duration }}
+  duration: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.certs.qmgr.commonName }}
+  commonName: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.certs.qmgr.dnsNames }}
+  dnsNames:
+  {{- range . }}
+    - {{ . | quote }}
+  {{- end }}
+  {{- end }}
+
+  {{- with .Values.certs.qmgr.privateKey }}
+  privateKey:
+    {{- with .rotationPolicy }}rotationPolicy: {{ . | quote }}{{- end }}
+    {{- with .algorithm }}algorithm: {{ . | quote }}{{- end }}
+    {{- with .size }}size: {{ . }}{{- end }}
+  {{- end }}
+
+  {{- with .Values.certs.qmgr.subject }}
+  subject:
+    {{- with .organizations }}
+    organizations:
+{{ toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .countries }}
+    countries:
+{{ toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .organizationalUnits }}
+    organizationalUnits:
+{{ toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .provinces }}
+    provinces:
+{{ toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .localities }}
+    localities:
+{{ toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+
+  issuerRef:
+    name: {{ .Values.certs.qmgr.issuerRef.name | quote }}
+    kind: {{ .Values.certs.qmgr.issuerRef.kind | quote }}
+    {{- with .Values.certs.qmgr.issuerRef.group }}
+    group: {{ . | quote }}
+    {{- end }}
+{{- end }}
+
+{{- if and .Values.certs.enabled .Values.certs.crr.create }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "mq.certs.crr.name" . | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  secretName: {{ include "mq.certs.crr.secretName" . | quote }}
+  {{- with .Values.certs.crr.renewBefore }}
+  renewBefore: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.certs.crr.duration }}
+  duration: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.certs.crr.commonName }}
+  commonName: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.certs.crr.dnsNames }}
+  dnsNames:
+  {{- range . }}
+    - {{ . | quote }}
+  {{- end }}
+  {{- end }}
+
+  {{- with .Values.certs.crr.privateKey }}
+  privateKey:
+    {{- with .rotationPolicy }}rotationPolicy: {{ . | quote }}{{- end }}
+    {{- with .algorithm }}algorithm: {{ . | quote }}{{- end }}
+    {{- with .size }}size: {{ . }}{{- end }}
+  {{- end }}
+
+  {{- with .Values.certs.crr.subject }}
+  subject:
+    {{- with .organizations }}
+    organizations:
+{{ toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .countries }}
+    countries:
+{{ toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .organizationalUnits }}
+    organizationalUnits:
+{{ toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .provinces }}
+    provinces:
+{{ toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .localities }}
+    localities:
+{{ toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+
+  issuerRef:
+    name: {{ .Values.certs.crr.issuerRef.name | quote }}
+    kind: {{ .Values.certs.crr.issuerRef.kind | quote }}
+    {{- with .Values.certs.crr.issuerRef.group }}
+    group: {{ . | quote }}
+    {{- end }}
+{{- end }}
+
+
+
+4) Where to use these secret names in QueueManager (one-liners)
+
+Replication TLS secret (CRR):
+
+tls:
+  secretName: {{ include "mq.certs.crr.secretName" . | quote }}
+
+
+
+PKI key store secret (QMGR / channel):
+
+
+pki:
+  keys:
+    - name: {{ .Values.pki.keyName | quote }}
+      secret:
+        secretName: {{ include "mq.certs.qmgr.secretName" . | quote }}
+        items:
+{{- toYaml .Values.pki.items | nindent 10 }}
