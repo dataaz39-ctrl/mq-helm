@@ -98,7 +98,7 @@ certs:
     subject:
       organizations: ["your-org"]
       countries: ["US"]
-      organizationalUnits: ["bacmqf"]
+      organizationalUnits: ["mq"]
       provinces: [""]
       localities: [""]
 
@@ -405,5 +405,6 @@ spec:
   issuerRef:
 {{ toYaml .Values.certs.crr.issuerRef | nindent 4 }}
 {{- end }}
+
 
 
