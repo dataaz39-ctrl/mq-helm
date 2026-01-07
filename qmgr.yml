@@ -409,3 +409,201 @@ spec:
 
 
 
+================================================================================
+IBM MQ Native HA / CRR – Operations Notes
+================================================================================
+
+This chart deploys an IBM MQ QueueManager using the IBM MQ Operator on
+OpenShift. It may include:
+- Native HA or Native HA + CRR
+- MQSC and mq.ini configuration via ConfigMaps
+- LDAP configuration via Secret
+- TLS certificates via cert-manager
+- OpenShift Routes for external MQ access
+
+--------------------------------------------------------------------------------
+1) Helm – Common Commands
+--------------------------------------------------------------------------------
+
+Check Helm version:
+  helm version
+
+Render templates locally (NO deployment):
+  helm template mq-nativeha-crr ./mq-nativeha-crr-helm \
+    -n <namespace> \
+    -f values.yaml
+
+Render with debug (recommended):
+  helm template mq-nativeha-crr ./mq-nativeha-crr-helm \
+    -n <namespace> \
+    -f values.yaml \
+    --debug
+
+Install new release:
+  helm install mq-nativeha-crr ./mq-nativeha-crr-helm \
+    -n <namespace> \
+    -f values.yaml
+
+Upgrade existing release:
+  helm upgrade mq-nativeha-crr ./mq-nativeha-crr-helm \
+    -n <namespace> \
+    -f values.yaml
+
+Install or upgrade (most common):
+  helm upgrade --install mq-nativeha-crr ./mq-nativeha-crr-helm \
+    -n <namespace> \
+    -f values.yaml
+
+Install with environment overlays:
+  helm upgrade --install mq-nativeha-crr ./mq-nativeha-crr-helm \
+    -n <namespace> \
+    -f values.yaml \
+    -f values-live.yaml
+
+Dry-run (validate without applying):
+  helm upgrade --install mq-nativeha-crr ./mq-nativeha-crr-helm \
+    -n <namespace> \
+    -f values.yaml \
+    --dry-run
+
+List releases:
+  helm list -n <namespace>
+
+Check release status:
+  helm status mq-nativeha-crr -n <namespace>
+
+Uninstall release:
+  helm uninstall mq-nativeha-crr -n <namespace>
+
+--------------------------------------------------------------------------------
+2) OpenShift (oc) – Common Commands
+--------------------------------------------------------------------------------
+
+Login:
+  oc login <cluster-url>
+
+Switch namespace:
+  oc project <namespace>
+
+List QueueManagers:
+  oc get qmgr
+
+Describe QueueManager (IMPORTANT):
+  oc describe qmgr <qmgr-name>
+
+List MQ pods:
+  oc get pods
+
+Pod details:
+  oc describe pod <pod-name>
+
+View MQ logs:
+  oc logs <pod-name>
+
+Follow logs:
+  oc logs -f <pod-name>
+
+Exec into MQ pod:
+  oc exec -it <pod-name> -- bash
+
+--------------------------------------------------------------------------------
+3) MQ Runtime Checks
+--------------------------------------------------------------------------------
+
+Check Native HA / CRR status:
+  oc exec -it <active-pod> -- dspmq -o nativeha -g
+
+Expected:
+  ROLE(Active)
+  QUORUM(3/3)
+  INSYNC(yes)
+
+Check QM status:
+  oc exec -it <pod-name> -- dspmq
+
+--------------------------------------------------------------------------------
+4) ConfigMaps and Secrets
+--------------------------------------------------------------------------------
+
+List ConfigMaps:
+  oc get configmap
+
+View MQSC / INI ConfigMap:
+  oc get configmap <name> -o yaml
+
+List Secrets:
+  oc get secret
+
+Describe TLS secret:
+  oc describe secret <secret-name>
+
+--------------------------------------------------------------------------------
+5) Routes (External MQ Access)
+--------------------------------------------------------------------------------
+
+List Routes:
+  oc get route
+
+Describe Route:
+  oc describe route <route-name>
+
+MQ Routes use:
+- TLS passthrough
+- SNI-based routing
+- Port 1414
+
+--------------------------------------------------------------------------------
+6) Certificates (cert-manager)
+--------------------------------------------------------------------------------
+
+List Certificates:
+  oc get certificate
+
+Describe Certificate:
+  oc describe certificate <certificate-name>
+
+Check TLS Secret:
+  oc get secret <tls-secret-name> -o yaml
+
+--------------------------------------------------------------------------------
+7) Troubleshooting
+--------------------------------------------------------------------------------
+
+Recent events:
+  oc get events --sort-by=.metadata.creationTimestamp
+
+MQ Operator logs:
+  oc logs -n ibm-mq <mq-operator-pod>
+
+Validate rendered YAML:
+  helm template mq-nativeha-crr ./mq-nativeha-crr-helm \
+    -f values.yaml | oc apply --dry-run=client -f -
+
+--------------------------------------------------------------------------------
+8) Recommended Ops Flow
+--------------------------------------------------------------------------------
+
+1) Render templates:
+   helm template ... --debug
+
+2) Dry-run install:
+   helm upgrade --install ... --dry-run
+
+3) Deploy:
+   helm upgrade --install ...
+
+4) Verify:
+   oc get qmgr
+   oc get pods
+
+5) Check HA status:
+   oc exec -it <pod> -- dspmq -o nativeha -g
+
+--------------------------------------------------------------------------------
+END OF NOTES
+--------------------------------------------------------------------------------
+
+
+
+
+
