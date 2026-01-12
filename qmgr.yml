@@ -607,3 +607,87 @@ END OF NOTES
 
 
 
+
+
+
+
+
+
+import pymqi
+from pymqi import CMQC
+
+QMGR_NAME   = "QM1"
+CHANNEL     = "APP.SVRCONN"
+HOST        = "mq-route.apps.example.com"   # OCP Route host (or service DNS)
+PORT        = "443"                         # often 443 for Route passthrough; or 1414 if ClusterIP/LoadBalancer
+CONNAME     = f"{HOST}({PORT})"
+
+USER        = "myldapuser"
+PASSWORD    = "myldappassword"
+
+# --- TLS settings ---
+# For KDB repositories, use the file path WITHOUT the .kdb extension.
+# Example files:
+#   /certs/app-trust.kdb
+#   /certs/app-trust.sth   (stash file)  OR you can provide password via env MQSSLKEYR/MQSSLKEYTPWD in some setups
+KEY_REPO    = "/certs/app-trust"          # truststore that contains CA + QMGR signer chain
+CIPHERSPEC  = "TLS_RSA_WITH_AES_256_CBC_SHA256"  # must match SVRCONN SSLCIPH
+
+def connect():
+    # Client channel definition
+    cd = pymqi.CD()
+    cd.ChannelName = CHANNEL.encode()
+    cd.ConnectionName = CONNAME.encode()
+    cd.ChannelType = CMQC.MQCHT_CLNTCONN
+    cd.TransportType = CMQC.MQXPT_TCP
+
+    # TLS config (uses the key repository as truststore)
+    sco = pymqi.SCO()
+    sco.KeyRepository = KEY_REPO.encode()
+    cd.SSLCipherSpec = CIPHERSPEC.encode()
+
+    # Security parms (user/password) -> MQ validates via LDAP if configured
+    csp = pymqi.CSP()
+    csp.AuthenticationType = CMQC.MQCSP_AUTH_USER_ID_AND_PWD
+    csp.UserId = USER.encode()
+    csp.Password = PASSWORD.encode()
+
+    # Connection options
+    cno = pymqi.CNO()
+    cno.Options = CMQC.MQCNO_NONE
+    cno.SecurityParms = csp
+    cno.SSLConfig = sco
+
+    qmgr = pymqi.QueueManager(None)
+    qmgr.connect_with_options(QMGR_NAME, cd, cno)
+    return qmgr
+
+def main():
+    qmgr = connect()
+    print("Connected OK")
+
+    q = pymqi.Queue(qmgr, "DEV.QUEUE.1")
+
+    # PUT
+    msg = b"hello from python"
+    q.put(msg)
+    print("Put message")
+
+    # GET
+    md = pymqi.MD()
+    gmo = pymqi.GMO()
+    gmo.Options = CMQC.MQGMO_WAIT | CMQC.MQGMO_FAIL_IF_QUIESCING
+    gmo.WaitInterval = 5000  # ms
+
+    data = q.get(None, md, gmo)
+    print("Got message:", data)
+
+    q.close()
+    qmgr.disconnect()
+    print("Disconnected")
+
+if __name__ == "__main__":
+    main()
+
+
+
