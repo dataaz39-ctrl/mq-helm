@@ -690,4 +690,107 @@ if __name__ == "__main__":
     main()
 
 
+==================
+
+PROBLEM
+
+Error:
+Unable to set SSL:
+OutboundSNI=HOSTNAME
+
+Cause:
+IBM MQ Client is automatically reading a system mqclient.ini
+(usually under C:\ProgramData\IBM\MQ\mqclient.ini).
+
+You do NOT have permission to modify files under C:,
+so MQ fails when trying to apply OutboundSNI from that file
+or conflicts with CCDT / MQSERVER settings.
+
+SOLUTION (NO C:\ ACCESS REQUIRED)
+
+Create and use your OWN mqclient.ini in a user-writable folder
+and tell MQ Client to use it.
+
+STEP 1: Create a writable config directory
+
+Create a directory under your user profile, for example:
+
+C:\Users<your-user>\mqcfg
+
+STEP 2: Create your own mqclient.ini
+
+Create a file:
+
+C:\Users<your-user>\mqcfg\mqclient.ini
+
+File contents:
+
+SSL:
+OutboundSNI=CHANNEL
+
+Explanation:
+CHANNEL is safer for OpenShift Routes and avoids hostname/SNI mismatch.
+(If your Route explicitly requires hostname SNI, you can use HOSTNAME instead.)
+
+STEP 3: Tell MQ Client to use YOUR mqclient.ini
+
+Set this environment variable before running any MQ command:
+
+MQCLNTCF=C:\Users<your-user>\mqcfg\mqclient.ini
+
+This OVERRIDES the system mqclient.ini in C:\ProgramData
+and does NOT require admin permissions.
+
+STEP 4: Make sure ONLY ONE channel definition method is used
+
+You must use ONLY ONE of the following:
+
+CCDT
+OR
+
+MQSERVER
+
+Recommended: CCDT
+
+Ensure these are NOT set:
+
+MQSERVER
+MQCHLLIB
+MQCHLTAB
+
+STEP 5: Required environment variables (TLS trust only)
+
+Set only these:
+
+MQCCDTURL = file:///C:/path/to/ccdt.json
+MQSSLKEYR = D:\path\to\tls\trust (NO extension, points to trust.kdb)
+
+STEP 6: Test
+
+Run:
+
+amqsputc Q1 IBMNHAQMGR
+
+If this works, TLS + SNI are now clean and correct.
+
+WHY THIS WORKS
+
+MQ Client always prefers mqclient.ini
+
+You cannot change the system one
+
+MQCLNTCF lets you redirect MQ to a user-owned config
+
+OutboundSNI is now controlled by YOU
+
+No C:\ permissions required
+
+RECOMMENDED VALUE FOR YOUR SETUP
+
+Because you are using OpenShift Routes:
+
+OutboundSNI=CHANNEL
+
+This avoids hostname routing mismatches and is commonly required
+with MQ + OpenShift passthrough routes.
 
