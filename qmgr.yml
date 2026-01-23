@@ -1,3 +1,193 @@
+<!--
+COPILOT PROMPT – Enterprise Helm Chart README (IBM MQ Operator on OpenShift)
+
+You are generating a COMPLETE, enterprise-grade README.md for this Helm chart.
+
+IMPORTANT RULES
+- You MUST analyze the actual repository structure and files.
+- Every template (*.yaml) and every values.yaml option MUST be documented.
+- If a value is referenced in templates via .Values.*, it MUST appear in the documentation.
+- Do NOT invent features that do not exist.
+- Assume OpenShift (not vanilla Kubernetes).
+
+REPOSITORY CONTEXT (derived from repo – verify and adjust):
+- Helm chart deploys IBM MQ QueueManager using IBM MQ Operator
+- templates include:
+  - queuemanager.yaml (core QueueManager CR)
+  - _mq-configmap.yaml (MQSC / INI configuration)
+  - app-configmap.yaml (application-specific MQ config)
+  - ldap-secret.yaml (LDAP credentials handling)
+  - certificates.yaml (TLS cert secrets for QMGR / CRR)
+  - trust-secrets.yaml (client and peer trust stores)
+  - routes.yaml (OpenShift Routes)
+  - system-default-configmap.yaml (baseline MQ defaults)
+  - _helpers.tpl (naming, labels, helpers)
+  - NOTES.txt (post-install instructions)
+- values.yaml + values-live.yaml + values-recovery.yaml control behavior
+- rendered.yaml is an example rendered output (reference only)
+- Jenkinsfile exists for CI/CD
+
+TARGET AUDIENCE
+- Platform Engineers
+- OpenShift Administrators
+- IBM MQ / Middleware Engineers
+- SRE / DevOps teams
+
+README MUST INCLUDE THESE SECTIONS (IN THIS ORDER)
+
+1. Title + Short Description
+   - What this Helm chart deploys
+   - IBM MQ Operator + OpenShift focus
+
+2. Features
+   - QueueManager creation
+   - MQSC and INI configuration via ConfigMaps
+   - LDAP authentication support
+   - TLS for Queue Manager
+   - Trust stores for applications and CRR
+   - OpenShift Routes
+   - Live / Recovery (HA / DR) value separation
+   - CI/CD friendly (Jenkins / GitOps)
+
+3. Architecture Overview
+   - Components created by this chart
+   - Relationship between:
+     Route → Service → QueueManager Pod
+   - ASCII diagram
+   - Live vs Recovery explanation (if applicable)
+
+4. Prerequisites
+   - OpenShift version
+   - IBM MQ Operator installed
+   - Helm version
+   - Required permissions (project, SCC, routes)
+
+5. Repository Structure
+   - Explain each key file and template:
+     templates/queuemanager.yaml
+     templates/_mq-configmap.yaml
+     templates/app-configmap.yaml
+     templates/ldap-secret.yaml
+     templates/certificates.yaml
+     templates/trust-secrets.yaml
+     templates/routes.yaml
+     values.yaml
+     values-live.yaml
+     values-recovery.yaml
+     NOTES.txt
+
+6. Quick Start
+   - oc login
+   - oc new-project
+   - helm install example
+   - helm upgrade example using multiple values files
+
+7. Configuration Strategy (IMPORTANT)
+   - Base values.yaml (platform defaults)
+   - values-live.yaml (active / primary site)
+   - values-recovery.yaml (DR / secondary site)
+   - Show recommended layering with -f flags
+
+8. COMPLETE Values Reference (CRITICAL SECTION)
+   - Create FULL tables for ALL configuration options
+   - Columns:
+     Parameter | Type | Default | Required | Description
+   - Group tables by:
+     - Global settings
+     - QueueManager settings
+     - Storage / persistence
+     - MQSC / INI config
+     - Application config
+     - LDAP configuration
+     - TLS certificates
+     - Trust secrets
+     - Routes
+     - Resources (CPU/memory)
+   - Use FULL paths (example: tls.qmgr.secretName)
+
+9. LDAP Configuration Deep Dive
+   - Explain ldap-secret.yaml behavior
+   - How secrets are referenced (secretName / keys)
+   - How LDAP config is injected into QueueManager
+   - Environment-specific LDAP handling
+
+10. TLS and Trust Model (VERY IMPORTANT)
+    - Queue Manager TLS cert secret
+    - CRR / peer trust secrets
+    - Client trust secret
+    - Naming conventions used
+    - How secrets are expected to be created (external / CI / operator)
+    - mTLS explanation if optional flags exist
+
+11. Routes and Connectivity
+    - Route types (passthrough / reencrypt if applicable)
+    - Hostname construction
+    - Port exposure
+    - Example test commands (openssl, runmqsc)
+
+12. Operations
+    - helm upgrade
+    - helm rollback
+    - helm uninstall
+    - How to view NOTES.txt output
+    - How to render templates (helm template)
+
+13. Troubleshooting
+    - Missing secrets
+    - TLS handshake failures
+    - LDAP auth failures
+    - Route connection issues
+    - Operator reconciliation errors
+
+14. CI/CD Integration
+    - Jenkinsfile purpose
+    - How this chart fits into pipelines
+    - Values injection via CI (no secrets in git)
+
+15. Examples
+    - Minimal QueueManager
+    - With LDAP
+    - With TLS + trust secrets
+    - Live / Recovery deployment example
+
+16. Best Practices
+    - Secret management
+    - Cert rotation
+    - Values file separation
+    - GitOps-friendly usage
+
+17. FAQ
+    - Should secrets be committed?
+    - How to rotate certs?
+    - How to change LDAP password?
+    - Live vs Recovery usage?
+
+18. License / Ownership
+
+STYLE REQUIREMENTS
+- Professional enterprise tone
+- GitHub-friendly Markdown
+- Tables and code blocks
+- Clear headings
+- No marketing fluff
+
+FINAL CHECK
+- Do not skip ANY values or templates.
+- Remove sections that truly do not apply.
+-->
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect — keep that certs: structure, and we’ll enforce your naming standard automatically from qm.name + env.
 
 Naming standard you asked for
@@ -793,4 +983,5 @@ OutboundSNI=CHANNEL
 
 This avoids hostname routing mismatches and is commonly required
 with MQ + OpenShift passthrough routes.
+
 
