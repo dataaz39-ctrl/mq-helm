@@ -1,0 +1,76 @@
+---
+# Source registry 1: icr.io (cpopen namespace - operator side, anonymous)
+src_registry:
+  repo_key: "remote-registry-docker-ibm-cpopen"
+  url: "https://icr.io"
+  username: ""
+  password: ""
+  allowlist: "cpopen/**"
+
+dest_registry: "{{ container_registry_nonprod }}"
+
+image_list:
+  # ============================================================
+  # cpopen namespace - Operator, Bundle, Catalogs
+  # Source: icr.io/cpopen
+  # Dest:   app/ibm/mq/operator/cpopen/
+  # ============================================================
+
+  # --- IBM MQ Operator (the controller) ---
+  - src: "cpopen/ibm-mq-operator@sha256:REPLACE_OPERATOR_DIGEST_3_9_1"
+    dest: "app/ibm/mq/operator/cpopen/ibm-mq-operator@sha256:REPLACE_OPERATOR_DIGEST_3_9_1"
+  - src: "cpopen/ibm-mq-operator:3.9.1"
+    dest: "app/ibm/mq/operator/cpopen/ibm-mq-operator:3.9.1"
+
+  # --- IBM MQ Operator Bundle (OLM install metadata) ---
+  - src: "cpopen/ibm-mq-operator-bundle@sha256:REPLACE_BUNDLE_DIGEST_3_9_1"
+    dest: "app/ibm/mq/operator/cpopen/ibm-mq-operator-bundle@sha256:REPLACE_BUNDLE_DIGEST_3_9_1"
+  - src: "cpopen/ibm-mq-operator-bundle:3.9.1"
+    dest: "app/ibm/mq/operator/cpopen/ibm-mq-operator-bundle:3.9.1"
+
+  # --- IBM MQ Operator Catalog (MQ-specific catalog index) ---
+  - src: "cpopen/ibm-mq-operator-catalog@sha256:REPLACE_MQ_CATALOG_DIGEST_3_9_1"
+    dest: "app/ibm/mq/operator/cpopen/ibm-mq-operator-catalog@sha256:REPLACE_MQ_CATALOG_DIGEST_3_9_1"
+  - src: "cpopen/ibm-mq-operator-catalog:latest"
+    dest: "app/ibm/mq/operator/cpopen/ibm-mq-operator-catalog:latest"
+
+  # --- IBM Operator Catalog (umbrella/full IBM catalog index) ---
+  - src: "cpopen/ibm-operator-catalog@sha256:REPLACE_IBM_CATALOG_DIGEST"
+    dest: "app/ibm/mq/operator/cpopen/ibm-operator-catalog@sha256:REPLACE_IBM_CATALOG_DIGEST"
+  - src: "cpopen/ibm-operator-catalog:latest"
+    dest: "app/ibm/mq/operator/cpopen/ibm-operator-catalog:latest"
+
+---
+
+---
+# Source registry 2: cp.icr.io (cp namespace - queue manager, entitlement key required)
+src_registry:
+  repo_key: "remote-registry-docker-ibm-cp"
+  url: "https://cp.icr.io"
+  username: "cp"
+  password: "{{ ibm_entitlement_key }}"   # from Vault
+  allowlist: "cp/**"
+
+dest_registry: "{{ container_registry_nonprod }}"
+
+image_list:
+  # ============================================================
+  # cp namespace - Queue Manager runtime images
+  # Source: cp.icr.io/cp
+  # Dest:   app/ibm/mq/operator/cp/
+  # ============================================================
+
+  # --- IBM MQ Advanced Server (production QM, no CP4I entitlement) ---
+  # Repeat this block for each MQ version supported by operator 3.9.1
+  - src: "cp/ibm-mqadvanced-server@sha256:REPLACE_QM_DIGEST_9_4_3_0_R1"
+    dest: "app/ibm/mq/operator/cp/ibm-mqadvanced-server@sha256:REPLACE_QM_DIGEST_9_4_3_0_R1"
+  - src: "cp/ibm-mqadvanced-server:9.4.3.0-r1"
+    dest: "app/ibm/mq/operator/cp/ibm-mqadvanced-server:9.4.3.0-r1"
+
+  # --- IBM MQ Advanced Server Integration (production QM, CP4I entitlement) ---
+  # Repeat this block for each MQ version supported by operator 3.9.1
+  - src: "cp/ibm-mqadvanced-server-integration@sha256:REPLACE_QM_INT_DIGEST_9_4_3_0_R1"
+    dest: "app/ibm/mq/operator/cp/ibm-mqadvanced-server-integration@sha256:REPLACE_QM_INT_DIGEST_9_4_3_0_R1"
+  - src: "cp/ibm-mqadvanced-server-integration:9.4.3.0-r1"
+    dest: "app/ibm/mq/operator/cp/ibm-mqadvanced-server-integration:9.4.3.0-r1"
+    
