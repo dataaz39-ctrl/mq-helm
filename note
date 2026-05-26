@@ -1,0 +1,3 @@
+Hey — quick question on the registry side. IBM doesn't publish `:latest` tags for the MQ operator, bundle, or QM images on `icr.io` / `cp.icr.io` (only the operator catalog has `:latest`). Today I'm running `skopeo list-tags` manually to see what's new.
+
+Do we have anything in the platform that can watch an external registry for new tags and auto-PR a YAML update when a new version drops? Thinking something like Renovate, a scheduled `oc mirror` diff, or a custom poller that updates the Subscription/CatalogSource/QueueManager manifests in Git.
